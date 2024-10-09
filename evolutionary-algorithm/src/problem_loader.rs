@@ -1,3 +1,10 @@
+use crate::problem::Problem;
+use crate::solution::{Solution, SolutionEntry, SolutionQuality};
+use anyhow::{anyhow, Ok, Result};
+
+#[cfg(test)]
+mod tests;
+
 #[derive(Debug)]
 pub struct Coordinates {
     pub x: u16,
@@ -17,12 +24,65 @@ pub struct CVRProblem {
     comment: String,
     type_: String,
     edge_weight_type: String,
-    capacity: u16,
-    dimenstion: usize,
+    capacity: Capacity,
+    dimension: usize,
     node_coordinates: Vec<Coordinates>,
-    demands: Vec<u16>,
+    demands: Vec<Demand>,
     depots: Vec<u16>,
-    distances: Option<Vec<Vec<f32>>>,
+    distances: Option<Vec<Vec<SolutionQuality>>>,
+}
+
+type Capacity = u16;
+type Demand = u16;
+
+impl Problem for CVRProblem {
+    fn random_solution(&self) -> Solution {
+        let mut left_nodes = (1..self.dimension as SolutionEntry).collect::<Vec<SolutionEntry>>();
+        let mut selected_nodes: Solution = vec![self.closest_depot()];
+
+        for _ in 1..self.dimension {
+            let random_index: usize = rand::random();
+            let selected_node_index: usize = random_index % left_nodes.len();
+            selected_nodes.push(left_nodes[selected_node_index]);
+            left_nodes.remove(selected_node_index);
+        }
+
+        selected_nodes
+    }
+    fn eval(&self, solution: &Solution) -> Result<SolutionQuality> {
+        struct CurrentState {
+            node: SolutionEntry,
+            distance: SolutionQuality,
+            resources: u16,
+        }
+
+        let initial_state = CurrentState {
+            node: solution[0],
+            distance: SolutionQuality::default(),
+            resources: self.capacity,
+        };
+
+        let evaluation = solution[1..]
+            .iter()
+            .try_fold(initial_state, |mut accum, &curr| {
+                let next_demand = &self.demands(&curr)?;
+                let distance = if next_demand > &accum.resources {
+                    let depot = &self.closest_depot();
+                    accum.resources = self.capacity - next_demand;
+                    self.distance(&accum.node, depot)? + self.distance(depot, &curr)?
+                } else {
+                    accum.resources -= next_demand;
+                    self.distance(&accum.node, &curr)?
+                };
+
+                accum.distance += distance;
+                accum.node = curr;
+                Ok(accum)
+            })?;
+
+        let res = evaluation.distance + self.distance(&evaluation.node, &self.closest_depot())?;
+        Ok(res)
+    }
 }
 
 impl CVRProblem {
@@ -34,7 +94,7 @@ impl CVRProblem {
         capacity: u16,
         node_coordinates: Vec<Coordinates>,
         demands: Vec<u16>,
-        dimenstion: usize,
+        dimension: usize,
         distances: Option<Vec<Vec<f32>>>,
         depots: Vec<u16>,
     ) -> CVRProblem {
@@ -46,17 +106,43 @@ impl CVRProblem {
             capacity,
             node_coordinates,
             demands,
-            dimenstion,
+            dimension,
             depots,
             distances,
         }
     }
 
-    pub fn precalculate_distances(&mut self) {
-        self.distances = Some(vec![vec![0f32; self.dimenstion]; self.dimenstion]);
+    fn distance(&self, node_a: &SolutionEntry, node_b: &SolutionEntry) -> Result<SolutionQuality> {
+        match &self.distances {
+            None => Err(anyhow!(
+                "Failed to get distance, distances matrix is not prepared yet"
+            )),
+            Some(distances) => {
+                if *node_a as usize > distances.len() || *node_b as usize > distances.len() {
+                    Err(anyhow!("Failed to get distance, invalid node indexes"))
+                } else {
+                    Ok(distances[*node_a as usize][*node_b as usize])
+                }
+            }
+        }
+    }
 
-        for i in 0usize..self.dimenstion {
-            for j in 0usize..self.dimenstion {
+    fn demands(&self, node: &SolutionEntry) -> Result<Demand> {
+        match self.demands.get(*node as usize) {
+            None => Err(anyhow!("Failed to get distance, invalid node indexes")),
+            Some(demand) => Ok(*demand),
+        }
+    }
+
+    fn closest_depot(&self) -> SolutionEntry {
+        self.depots[0]
+    }
+
+    pub fn precalculate_distances(&mut self) {
+        self.distances = Some(vec![vec![0f32; self.dimension]; self.dimension]);
+
+        for i in 0usize..self.dimension {
+            for j in 0usize..self.dimension {
                 match &mut self.distances {
                     None => {
                         continue;
@@ -143,7 +229,7 @@ fn handle_loading_problem_depots(
     match row {
         -1 => (problem.0, ProblemLoadingStage::Finished),
         val => {
-            problem.0.depots.push(val as u16);
+            problem.0.depots.push(val as u16 - 1);
             problem
         }
     }
@@ -165,7 +251,7 @@ fn handle_loading_problem_param(
             problem.0.type_ = row[1].to_string();
         }
         "DIMENSION" => {
-            problem.0.dimenstion = row[1].to_string().parse::<usize>().unwrap();
+            problem.0.dimension = row[1].to_string().parse::<usize>().unwrap();
         }
         "EDGE_WEIGHT_TYPE" => {
             problem.0.edge_weight_type = row[1].to_string();
@@ -184,5 +270,6 @@ fn handle_loading_problem_param(
         }
         _ => {}
     };
-    return problem;
+
+    problem
 }
