@@ -1,4 +1,5 @@
 pub mod evolutionary_algorithm;
+pub mod greedy_algorithm;
 pub mod population;
 pub mod problem;
 pub mod problem_loader;

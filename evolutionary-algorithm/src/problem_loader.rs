@@ -33,7 +33,7 @@ pub struct CVRProblem {
 }
 
 type Capacity = u16;
-type Demand = u16;
+pub type Demand = u16;
 
 impl Problem for CVRProblem {
     fn random_solution(&self) -> Solution {
@@ -112,7 +112,19 @@ impl CVRProblem {
         }
     }
 
-    fn distance(&self, node_a: &SolutionEntry, node_b: &SolutionEntry) -> Result<SolutionQuality> {
+    pub fn non_depot_nodes(&self) -> Vec<SolutionEntry> {
+        (1..self.dimension as SolutionEntry).collect()
+    }
+
+    pub fn capacity(&self) -> Capacity {
+        self.capacity
+    }
+
+    pub fn distance(
+        &self,
+        node_a: &SolutionEntry,
+        node_b: &SolutionEntry,
+    ) -> Result<SolutionQuality> {
         match &self.distances {
             None => Err(anyhow!(
                 "Failed to get distance, distances matrix is not prepared yet"
@@ -127,14 +139,14 @@ impl CVRProblem {
         }
     }
 
-    fn demands(&self, node: &SolutionEntry) -> Result<Demand> {
+    pub fn demands(&self, node: &SolutionEntry) -> Result<Demand> {
         match self.demands.get(*node as usize) {
             None => Err(anyhow!("Failed to get distance, invalid node indexes")),
             Some(demand) => Ok(*demand),
         }
     }
 
-    fn closest_depot(&self) -> SolutionEntry {
+    pub fn closest_depot(&self) -> SolutionEntry {
         self.depots[0]
     }
 

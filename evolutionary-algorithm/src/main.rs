@@ -1,8 +1,8 @@
 use std::fs::read_to_string;
 
 use evolutionary_algorithm::{
-    evolutionary_algorithm::EvolutionaryAlgorithm, problem::Problem, problem_loader,
-    selection::TournamentSelector, solver::Solver,
+    evolutionary_algorithm::EvolutionaryAlgorithm, greedy_algorithm::GreedyAlgorithm,
+    problem::Problem, problem_loader, selection::TournamentSelector, solver::Solver,
 };
 
 fn main() {
@@ -13,6 +13,12 @@ fn main() {
     let selector = TournamentSelector::new(5, &problem);
 
     let mut solver = EvolutionaryAlgorithm::new(30000, 80, &selector);
+
+    let mut greedy = GreedyAlgorithm::new(&problem);
+
+    let greedy_solution = greedy.solve().expect("Failed to greedy");
+
+    println!("Greedy {:#?}", greedy_solution);
 
     match solver.solve(&problem) {
         Err(err) => {
