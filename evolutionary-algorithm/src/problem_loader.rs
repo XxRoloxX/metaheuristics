@@ -1,5 +1,5 @@
+use crate::individual::{Fitness, Gene, VecIndividual};
 use crate::problem::Problem;
-use crate::solution::{Solution, SolutionEntry, SolutionQuality};
 use anyhow::{anyhow, Ok, Result};
 
 #[cfg(test)]
@@ -18,70 +18,83 @@ impl Coordinates {
     }
 }
 
+pub type Demand = u16;
+
 #[derive(Debug, Default)]
 pub struct CVRProblem {
     name: String,
     comment: String,
     type_: String,
     edge_weight_type: String,
-    capacity: Capacity,
+    capacity: Demand,
     dimension: usize,
-    node_coordinates: Vec<Coordinates>,
+    all_nodes: Vec<Coordinates>,
+    stops: Vec<Gene>,
+    depots: Vec<Gene>,
     demands: Vec<Demand>,
-    depots: Vec<u16>,
-    distances: Option<Vec<Vec<SolutionQuality>>>,
+    distances: Option<Vec<Vec<Fitness>>>,
 }
 
-type Capacity = u16;
-pub type Demand = u16;
-
 impl Problem for CVRProblem {
-    fn random_solution(&self) -> Solution {
-        let mut left_nodes = (1..self.dimension as SolutionEntry).collect::<Vec<SolutionEntry>>();
-        let mut selected_nodes: Solution = vec![self.closest_depot()];
+    fn random_individual(&self) -> VecIndividual {
+        let mut left_nodes = VecIndividual::from(&self.stops);
+        let mut selected_nodes: VecIndividual = VecIndividual::new();
 
-        for _ in 1..self.dimension {
-            let random_index: usize = rand::random();
-            let selected_node_index: usize = random_index % left_nodes.len();
-            selected_nodes.push(left_nodes[selected_node_index]);
-            left_nodes.remove(selected_node_index);
+        for _ in &self.stops {
+            let selected_gene = left_nodes.random_gene();
+            selected_nodes.add_gene(selected_gene);
+            left_nodes.remove_gene(selected_gene)
         }
 
         selected_nodes
     }
-    fn eval(&self, solution: &Solution) -> Result<SolutionQuality> {
+
+    fn eval(&self, individual: &VecIndividual) -> Result<Fitness> {
         struct CurrentState {
-            node: SolutionEntry,
-            distance: SolutionQuality,
+            node: Gene,
+            distance: Fitness,
             resources: u16,
         }
 
         let initial_state = CurrentState {
-            node: solution[0],
-            distance: SolutionQuality::default(),
+            node: self.closest_depot(),
+            distance: Fitness::default(),
             resources: self.capacity,
         };
 
-        let evaluation = solution[1..]
-            .iter()
-            .try_fold(initial_state, |mut accum, &curr| {
-                let next_demand = &self.demands(&curr)?;
-                let distance = if next_demand > &accum.resources {
-                    let depot = &self.closest_depot();
-                    accum.resources = self.capacity - next_demand;
-                    self.distance(&accum.node, depot)? + self.distance(depot, &curr)?
-                } else {
-                    accum.resources -= next_demand;
-                    self.distance(&accum.node, &curr)?
-                };
+        let evaluation =
+            individual
+                .genes()
+                .iter()
+                .try_fold(initial_state, |mut accum, &curr| {
+                    let next_demand = &self.demands(&curr)?;
+                    let distance = if next_demand > &accum.resources {
+                        let depot = &self.closest_depot();
+                        accum.resources = self.capacity - next_demand;
+                        self.distance(&accum.node, depot)? + self.distance(depot, &curr)?
+                    } else {
+                        accum.resources -= next_demand;
+                        self.distance(&accum.node, &curr)?
+                    };
 
-                accum.distance += distance;
-                accum.node = curr;
-                Ok(accum)
-            })?;
+                    accum.distance += distance;
+                    accum.node = curr;
+                    Ok(accum)
+                })?;
 
         let res = evaluation.distance + self.distance(&evaluation.node, &self.closest_depot())?;
         Ok(res)
+    }
+
+    fn serialize_indiviual(&self, individual: &VecIndividual) -> String {
+        format!(
+            "{:?}",
+            individual
+                .genes()
+                .iter()
+                .map(|gene| gene + 1)
+                .collect::<Vec<Gene>>(),
+        )
     }
 }
 
@@ -91,12 +104,13 @@ impl CVRProblem {
         comment: String,
         type_: String,
         edge_weight_type: String,
-        capacity: u16,
-        node_coordinates: Vec<Coordinates>,
-        demands: Vec<u16>,
+        capacity: Demand,
+        all_nodes: Vec<Coordinates>,
+        depots: Vec<Gene>,
+        stops: Vec<Gene>,
+        demands: Vec<Gene>,
+        distances: Option<Vec<Vec<Fitness>>>,
         dimension: usize,
-        distances: Option<Vec<Vec<f32>>>,
-        depots: Vec<u16>,
     ) -> CVRProblem {
         CVRProblem {
             name,
@@ -104,7 +118,8 @@ impl CVRProblem {
             type_,
             edge_weight_type,
             capacity,
-            node_coordinates,
+            all_nodes,
+            stops,
             demands,
             dimension,
             depots,
@@ -112,19 +127,15 @@ impl CVRProblem {
         }
     }
 
-    pub fn non_depot_nodes(&self) -> Vec<SolutionEntry> {
-        (1..self.dimension as SolutionEntry).collect()
+    pub fn stops(&self) -> &Vec<Gene> {
+        &self.stops
     }
 
-    pub fn capacity(&self) -> Capacity {
+    pub fn capacity(&self) -> Demand {
         self.capacity
     }
 
-    pub fn distance(
-        &self,
-        node_a: &SolutionEntry,
-        node_b: &SolutionEntry,
-    ) -> Result<SolutionQuality> {
+    pub fn distance(&self, node_a: &Gene, node_b: &Gene) -> Result<Fitness> {
         match &self.distances {
             None => Err(anyhow!(
                 "Failed to get distance, distances matrix is not prepared yet"
@@ -139,14 +150,23 @@ impl CVRProblem {
         }
     }
 
-    pub fn demands(&self, node: &SolutionEntry) -> Result<Demand> {
+    fn separate_stops_and_depots(&mut self) {
+        self.stops = (0..self.all_nodes.len() as Gene)
+            .filter(|node| {
+                let node_gene = *node as Gene;
+                !self.depots.contains(&node_gene)
+            })
+            .collect();
+    }
+
+    pub fn demands(&self, node: &Gene) -> Result<Demand> {
         match self.demands.get(*node as usize) {
             None => Err(anyhow!("Failed to get distance, invalid node indexes")),
             Some(demand) => Ok(*demand),
         }
     }
 
-    pub fn closest_depot(&self) -> SolutionEntry {
+    pub fn closest_depot(&self) -> Gene {
         self.depots[0]
     }
 
@@ -160,8 +180,7 @@ impl CVRProblem {
                         continue;
                     }
                     Some(distances) => {
-                        distances[i][j] =
-                            self.node_coordinates[i].distance(&self.node_coordinates[j]);
+                        distances[i][j] = self.all_nodes[i].distance(&self.all_nodes[j]);
                     }
                 }
             }
@@ -183,7 +202,7 @@ impl From<String> for CVRProblem {
         let current_stage = ProblemLoadingStage::Beginning;
         let initial_problem = CVRProblem::default();
 
-        content
+        let mut problem = content
             .lines()
             .fold(
                 (initial_problem, current_stage),
@@ -197,7 +216,10 @@ impl From<String> for CVRProblem {
                     _ => handle_loading_problem_param(accum, line),
                 },
             )
-            .0
+            .0;
+
+        problem.separate_stops_and_depots();
+        problem
     }
 }
 
@@ -227,7 +249,7 @@ fn handle_loading_problem_node_coordinates(
         _ => {
             let x = row[1].parse::<u16>().unwrap();
             let y = row[2].parse::<u16>().unwrap();
-            problem.0.node_coordinates.push(Coordinates { x, y });
+            problem.0.all_nodes.push(Coordinates { x, y });
             problem
         }
     }
