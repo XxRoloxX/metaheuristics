@@ -34,8 +34,9 @@ impl<'a> GreedyAlgorithm<'a> {
             unvisited_nodes: self.problem.stops().clone(),
         };
 
-        let res: Result<TripState> =
-            (0..initial.unvisited_nodes.len()).try_fold(initial, |mut accum, _| {
+        let mut res = (0..initial.unvisited_nodes.len()).try_fold(
+            initial,
+            |mut accum, _| -> Result<TripState> {
                 let closest_node = self.find_closest_node(&accum)?;
                 accum.unvisited_nodes = accum
                     .unvisited_nodes
@@ -46,9 +47,15 @@ impl<'a> GreedyAlgorithm<'a> {
                 accum.visited_nodes.push(accum.current_node);
                 accum.current_node = closest_node;
                 Ok(accum)
-            });
+            },
+        )?;
 
-        Ok(VecIndividual::from(&res?.visited_nodes))
+        res.visited_nodes.push(res.current_node);
+
+        //Remove first depot from the list (it shouldn't be encoded into a solution)
+        res.visited_nodes.remove(0);
+
+        Ok(VecIndividual::from(&res.visited_nodes))
     }
 
     fn find_closest_node(&self, state: &TripState) -> Result<Node> {

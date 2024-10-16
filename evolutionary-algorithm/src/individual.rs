@@ -30,13 +30,12 @@ impl VecIndividual {
     }
 
     pub fn random_gene(&self) -> Gene {
-        let random_index: usize = rand::random();
-        let selected_gene_index: usize = random_index % self.genes.len();
-        self.genes[selected_gene_index]
+        self.genes[self.random_gene_index()]
     }
 
     pub fn random_gene_index(&self) -> usize {
-        rand::random::<usize>() % self.number_of_genes()
+        let random_index = rand::thread_rng().next_u32() as usize;
+        random_index % self.genes.len()
     }
 
     pub fn number_of_genes(&self) -> usize {

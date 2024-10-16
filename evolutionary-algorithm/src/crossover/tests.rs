@@ -1,5 +1,8 @@
 use super::{OrderedCrossover, SingleChildCrossoverOperator};
-use crate::individual::VecIndividual;
+use crate::{
+    crossover::{PartiallyMappedCrossover, TwoChildrenCrossoverOperator},
+    individual::VecIndividual,
+};
 
 #[test]
 fn ordered_crossover() {
@@ -17,4 +20,22 @@ fn ordered_crossover() {
         .count();
 
     assert!(count == parent_a.genes().len());
+}
+
+#[test]
+fn partial_ordered_crossover() {
+    let parent_a = VecIndividual::from(vec![1, 2, 3, 4, 5, 6, 7, 8, 9]);
+    let parent_b = VecIndividual::from(vec![5, 4, 6, 9, 2, 1, 7, 8, 3]);
+
+    let operator = PartiallyMappedCrossover {};
+
+    let child = operator.crossover(&parent_a, &parent_b);
+    match child {
+        Err(err) => {
+            panic!("Failed to get children {}", err);
+        }
+        Ok(child) => {
+            println!("New children {:?}", child);
+        }
+    }
 }

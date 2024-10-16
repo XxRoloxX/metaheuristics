@@ -83,7 +83,7 @@ impl Problem for CVRProblem {
                 })?;
 
         let res = evaluation.distance + self.distance(&evaluation.node, &self.closest_depot())?;
-        Ok(res)
+        Ok(self.fitness_from_distance(res))
     }
 
     fn serialize_indiviual(&self, individual: &VecIndividual) -> String {
@@ -125,6 +125,11 @@ impl CVRProblem {
             depots,
             distances,
         }
+    }
+
+    // To make the fitness "the higher the better" the distance is inversed
+    pub fn fitness_from_distance(&self, distance: Fitness) -> Fitness {
+        1f32 / (1f32 + distance)
     }
 
     pub fn stops(&self) -> &Vec<Gene> {

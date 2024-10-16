@@ -1,4 +1,5 @@
 pub mod collector;
+pub mod configuration;
 pub mod crossover;
 pub mod evolutionary_algorithm;
 pub mod greedy_algorithm;

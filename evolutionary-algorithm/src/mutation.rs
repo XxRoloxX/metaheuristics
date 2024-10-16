@@ -14,3 +14,14 @@ impl Mutation for SwapMutation {
         individual.genes_mut().swap(start_index, end_index);
     }
 }
+
+pub struct InverseMutation {}
+
+impl Mutation for InverseMutation {
+    fn mutate(&self, individual: &mut VecIndividual) {
+        let (start_index, end_index) = individual.random_gene_range_indexes();
+        for index in start_index..(start_index + end_index) / 2 {
+            individual.genes_mut().swap(index, end_index - index);
+        }
+    }
+}

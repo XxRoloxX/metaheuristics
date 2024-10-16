@@ -4,6 +4,7 @@ use std::io::prelude::*;
 
 #[derive(Default)]
 pub struct CSVLogger<T> {
+    output_filename: String,
     headers: Vec<String>,
     entries: Vec<T>,
 }
@@ -14,19 +15,14 @@ pub trait PersistableLogger<T> {
 }
 
 impl<T> CSVLogger<T> {
-    pub fn new(headers: Vec<String>) -> Self {
+    pub fn new(output_filename: String, headers: Vec<String>) -> Self {
         CSVLogger {
+            output_filename,
             entries: Vec::new(),
             headers,
         }
     }
 }
-
-// impl<T> From<Vec<T>> for CSVLogger<T> {
-//     fn from(value: Vec<T>) -> Self {
-//         CSVLogger { entries: value }
-//     }
-// }
 
 #[derive(Debug, Default)]
 pub struct CSVEntry {
@@ -77,7 +73,7 @@ where
 
         let headers = self.headers.join("\t");
 
-        let mut output_file = File::create("logs.csv")?;
+        let mut output_file = File::create(&self.output_filename)?;
         output_file.write_all(headers.as_bytes())?;
         output_file.write_all(b"\n")?;
         output_file.write_all(rows.as_bytes())?;
