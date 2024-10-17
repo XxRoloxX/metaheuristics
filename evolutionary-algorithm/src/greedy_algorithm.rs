@@ -1,8 +1,10 @@
 use anyhow::{Context, Result};
 
 use crate::{
-    individual::{Gene, VecIndividual},
+    individual::{Fitness, Gene, VecIndividual},
+    problem::Problem,
     problem_loader::{CVRProblem, Demand},
+    solver::Solver,
 };
 
 // Teoria wybranych elementów, operatory, funkcjie oceniające wykresy, porównanie losowego/greedy i
@@ -20,6 +22,12 @@ struct TripState {
 pub struct GreedyAlgorithm<'a> {
     problem: &'a CVRProblem,
 }
+
+// impl<'a> Solver for GreedyAlgorithm<'a> {
+//     fn solve(&mut self, problem: &dyn Problem) -> Result<(Fitness, VecIndividual)> {
+//
+//     }
+// }
 
 impl<'a> GreedyAlgorithm<'a> {
     pub fn new(problem: &'a CVRProblem) -> Self {

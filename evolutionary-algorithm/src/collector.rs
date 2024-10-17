@@ -1,11 +1,13 @@
 use anyhow::Result;
-use std::fs::File;
+use std::fs::OpenOptions;
 use std::io::prelude::*;
+
+use crate::individual::Fitness;
 
 #[derive(Default)]
 pub struct CSVLogger<T> {
     output_filename: String,
-    headers: Vec<String>,
+    headers: Option<Vec<String>>,
     entries: Vec<T>,
 }
 
@@ -15,9 +17,9 @@ pub trait PersistableLogger<T> {
 }
 
 impl<T> CSVLogger<T> {
-    pub fn new(output_filename: String, headers: Vec<String>) -> Self {
+    pub fn new(output_filename: &str, headers: Option<Vec<String>>) -> Self {
         CSVLogger {
-            output_filename,
+            output_filename: output_filename.to_string(),
             entries: Vec::new(),
             headers,
         }
@@ -31,7 +33,7 @@ pub struct CSVEntry {
 
 impl CSVEntry {
     pub fn to_row(&self) -> String {
-        self.columns.join("\t")
+        self.columns.join(";")
     }
     pub fn new() -> Self {
         CSVEntry {
@@ -50,6 +52,10 @@ impl From<&CSVEntry> for String {
     fn from(value: &CSVEntry) -> Self {
         value.to_row()
     }
+}
+
+pub fn inverse_fitness(fitness: Fitness) -> Fitness {
+    (1f32 / fitness) - 1f32
 }
 
 impl<T> PersistableLogger<T> for CSVLogger<T>
@@ -71,13 +77,23 @@ where
             .collect::<Vec<String>>()
             .join("\n");
 
-        let headers = self.headers.join("\t");
+        // let mut output_file = File::create(&self.output_filename)?;
+        let mut output_file = OpenOptions::new()
+            .create(true)
+            .append(true)
+            .open(&self.output_filename)
+            .unwrap();
 
-        let mut output_file = File::create(&self.output_filename)?;
-        output_file.write_all(headers.as_bytes())?;
-        output_file.write_all(b"\n")?;
+        match &self.headers {
+            Some(headers) => {
+                let headers = headers.join(";");
+                output_file.write_all(headers.as_bytes())?;
+                output_file.write_all(b"\n")?;
+            }
+            None => {}
+        }
         output_file.write_all(rows.as_bytes())?;
-
+        output_file.write_all(b"\n")?;
         Ok(self.entries.len() as u64)
     }
 }

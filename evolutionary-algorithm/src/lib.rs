@@ -8,5 +8,6 @@ pub mod mutation;
 pub mod population;
 pub mod problem;
 pub mod problem_loader;
+pub mod runners;
 pub mod selection;
 pub mod solver;

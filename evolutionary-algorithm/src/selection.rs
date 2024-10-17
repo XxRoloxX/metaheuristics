@@ -8,22 +8,25 @@ use crate::{
 };
 
 pub trait Selector {
-    fn select(&self, population: Population) -> Result<Population>;
+    fn select(&self, population: Population, problem: &dyn Problem) -> Result<Population>;
+    fn name(&self) -> String;
 }
 
-pub struct TournamentSelector<'a> {
+pub struct TournamentSelector {
     size: u16,
-    problem: &'a dyn Problem,
 }
 
-impl<'a> TournamentSelector<'a> {
-    pub fn new(size: u16, problem: &'a dyn Problem) -> Self {
-        Self { size, problem }
+impl TournamentSelector {
+    pub fn new(size: u16) -> Self {
+        Self { size }
     }
 }
 
-impl<'a> Selector for TournamentSelector<'a> {
-    fn select(&self, population: Population) -> Result<Population> {
+impl Selector for TournamentSelector {
+    fn name(&self) -> String {
+        format!("tournament of {}", self.size)
+    }
+    fn select(&self, population: Population, problem: &dyn Problem) -> Result<Population> {
         let mut next_generation: Vec<VecIndividual> = Vec::new();
 
         for _ in 0..population.solutions().len() {
@@ -34,7 +37,7 @@ impl<'a> Selector for TournamentSelector<'a> {
                 .collect();
 
             let (best_solution, _) =
-                Population::individual_with_highest_fitness(self.problem, &tournament);
+                Population::individual_with_highest_fitness(problem, &tournament);
 
             next_generation.push(VecIndividual::from(best_solution));
         }
@@ -42,21 +45,18 @@ impl<'a> Selector for TournamentSelector<'a> {
         Ok(Population::new(next_generation))
     }
 }
+#[derive(Default)]
+pub struct RouletteSelector {}
 
-pub struct RouletteSelector<'a> {
-    // size: u16,
-    problem: &'a dyn Problem,
-}
-
-impl<'a> RouletteSelector<'a> {
-    pub fn new(problem: &'a dyn Problem) -> Self {
-        Self { problem }
+impl RouletteSelector {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl<'a> RouletteSelector<'a> {
+impl RouletteSelector {
     fn find_individual_by_probability<'b>(
-        &'a self,
+        &self,
         population: &'b Population,
         probabilities: &[f32],
         selected_probability: f32,
@@ -82,8 +82,11 @@ impl<'a> RouletteSelector<'a> {
     }
 }
 
-impl<'a> Selector for RouletteSelector<'a> {
-    fn select(&self, population: Population) -> Result<Population> {
+impl Selector for RouletteSelector {
+    fn name(&self) -> String {
+        String::from("roulette")
+    }
+    fn select(&self, population: Population, problem: &dyn Problem) -> Result<Population> {
         let mut next_generation: Vec<VecIndividual> = Vec::new();
         let mut probabilities: Vec<f32> = Vec::new();
         let mut rng = rand::thread_rng();
@@ -91,13 +94,13 @@ impl<'a> Selector for RouletteSelector<'a> {
         let score_sum: Fitness = population
             .solutions()
             .iter()
-            .map(|sol| self.problem.eval(sol))
+            .map(|sol| problem.eval(sol))
             .collect::<Result<Vec<Fitness>>>()?
             .iter()
             .sum();
 
         for individual in population.solutions() {
-            let probability: f32 = self.problem.eval(individual)? / score_sum;
+            let probability: f32 = problem.eval(individual)? / score_sum;
             probabilities.push(probability);
         }
 

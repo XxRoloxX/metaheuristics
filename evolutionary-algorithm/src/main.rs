@@ -2,124 +2,214 @@ use std::fs::read_to_string;
 
 use anyhow::Result;
 use evolutionary_algorithm::{
-    collector::CSVLogger,
+    collector::{CSVLogger, PersistableLogger},
     crossover::{CrossoverOperator, OrderedCrossover, PartiallyMappedCrossover},
     evolutionary_algorithm::{EvolutionaryAlgorithm, EvolutionaryAlgorithmBuilder, GenerationInfo},
     greedy_algorithm::GreedyAlgorithm,
-    mutation::{InverseMutation, Mutation},
+    mutation::{InverseMutation, Mutation, SwapMutation},
     problem::Problem,
     problem_loader,
+    runners::run_comparisons,
     selection::{RouletteSelector, Selector, TournamentSelector},
     solver::Solver,
 };
 
-fn get_configuration<'a>(
-    // selection_operator: Box<&'a dyn Selector>,
-    problem: &'a dyn Problem, // tournament_selector: Box
-                              // mutation_operator: Box<dyn Mutation>,
-                              // crossover_operator: CrossoverOperator,
-) -> Result<Vec<EvolutionaryAlgorithm<'a>>> {
+fn get_configuration(instance: &str) -> Result<Vec<EvolutionaryAlgorithm>> {
     let generation_info_headers = vec![
+        "configuration".to_string(),
         "generation".to_string(),
         "best_fitness".to_string(),
-        "worst_fitness".to_string(),
         "average_fitness".to_string(),
+        "worst_fitness".to_string(),
         "mutations".to_string(),
         "crossovers".to_string(),
         "population_size".to_string(),
     ];
 
-    Ok(vec![EvolutionaryAlgorithmBuilder::new()
-        .population_size(50)
-        .generations(1000)
-        .crossover_prob(0.2)
-        .mutation_prob(0.3)
-        .logger(Box::new(CSVLogger::new(
-            String::from("test1.csv"),
-            generation_info_headers,
-        )))
-        .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
-            OrderedCrossover {},
-        )))
-        .mutation_operator(Box::new(InverseMutation {}))
-        .selection_operator(Box::new(TournamentSelector::new(5, problem)))
-        // .selection_operator(Box::new(&roullette_selector))
-        .build()?])
+    Ok(vec![
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(100)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.3)
+        //     .logger(Box::new(CSVLogger::new(
+        //         instance,
+        //         Some(generation_info_headers),
+        //     )))
+        //     .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+        //         OrderedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(SwapMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(300)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.3)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+        //         OrderedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(InverseMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(500)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.3)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+        //         OrderedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(InverseMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(100)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.3)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::TwoChildrenCrossoverOperator(Box::new(
+        //         PartiallyMappedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(SwapMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(300)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.3)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::TwoChildrenCrossoverOperator(Box::new(
+        //         PartiallyMappedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(InverseMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(500)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.3)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::TwoChildrenCrossoverOperator(Box::new(
+        //         PartiallyMappedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(InverseMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(100)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.5)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+        //         OrderedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(SwapMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        // EvolutionaryAlgorithmBuilder::new()
+        //     .population_size(300)
+        //     .generations(1000)
+        //     .crossover_prob(0.7)
+        //     .mutation_prob(0.5)
+        //     .logger(Box::new(CSVLogger::new(instance, None)))
+        //     .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+        //         OrderedCrossover {},
+        //     )))
+        //     .mutation_operator(Box::new(SwapMutation {}))
+        //     .selection_operator(Box::new(TournamentSelector::new(5)))
+        //     .build()?,
+        EvolutionaryAlgorithmBuilder::new()
+            .population_size(500)
+            .generations(1000)
+            .crossover_prob(0.7)
+            .mutation_prob(0.5)
+            .logger(Box::new(CSVLogger::new(
+                instance,
+                Some(generation_info_headers),
+            )))
+            .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+                OrderedCrossover {},
+            )))
+            .mutation_operator(Box::new(SwapMutation {}))
+            .selection_operator(Box::new(TournamentSelector::new(5)))
+            .build()?,
+        EvolutionaryAlgorithmBuilder::new()
+            .population_size(500)
+            .generations(1000)
+            .crossover_prob(0.7)
+            .mutation_prob(0.5)
+            .logger(Box::new(CSVLogger::new(instance, None)))
+            .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+                OrderedCrossover {},
+            )))
+            .mutation_operator(Box::new(SwapMutation {}))
+            .selection_operator(Box::new(TournamentSelector::new(10)))
+            .build()?,
+        EvolutionaryAlgorithmBuilder::new()
+            .population_size(500)
+            .generations(1000)
+            .crossover_prob(0.7)
+            .mutation_prob(0.2)
+            .logger(Box::new(CSVLogger::new(instance, None)))
+            .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+                OrderedCrossover {},
+            )))
+            .mutation_operator(Box::new(SwapMutation {}))
+            .selection_operator(Box::new(RouletteSelector::new()))
+            .build()?,
+        EvolutionaryAlgorithmBuilder::new()
+            .population_size(200)
+            .generations(1000)
+            .crossover_prob(0.7)
+            .mutation_prob(0.4)
+            .logger(Box::new(CSVLogger::new(instance, None)))
+            .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+                OrderedCrossover {},
+            )))
+            .mutation_operator(Box::new(SwapMutation {}))
+            .selection_operator(Box::new(RouletteSelector::new()))
+            .build()?,
+    ])
 }
 
 fn main() {
-    let test_problem = read_to_string("./src/problem-instances/A-n32-k5.txt").unwrap();
-    // let test_problem = read_to_string("./src/problem-instances/test.txt").unwrap();
-    let mut problem = problem_loader::CVRProblem::from(test_problem);
-    problem.precalculate_distances();
-
-    let selector = TournamentSelector::new(5, &problem);
-    let generation_info_headers = vec![
-        "generation".to_string(),
-        "best_fitness".to_string(),
-        "worst_fitness".to_string(),
-        "average_fitness".to_string(),
-        "mutations".to_string(),
-        "crossovers".to_string(),
-        "population_size".to_string(),
+    let instances: Vec<&str> = vec![
+        "./src/problem-instances/A-n32-k5.txt",
+        // "./src/problem-instances/A-n37-k5.txt",
+        // "./src/problem-instances/A-n39-k5.txt",
+        // "./src/problem-instances/A-n45-k7.txt",
+        // "./src/problem-instances/A-n48-k7.txt",
     ];
 
-    let roulette_selector = RouletteSelector::new(&problem);
-
-    let logger: CSVLogger<GenerationInfo> =
-        CSVLogger::new(String::from("logs.csv"), generation_info_headers);
-
-    // let configuration: Vec<EvolutionaryAlgorithm> = vec![EvolutionaryAlgorithmBuilder::new()
-    //     .population_size(50)
-    //     .generations(1000)
-    //     .crossover_prob(0.2)
-    //     .mutation_prob(0.3)
-    //     .logger(Box::new(logger))
-    //     .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
-    //         OrderedCrossover {},
-    //     )))
-    //     // .crossover_operator(CrossoverOperator::TwoChildrenCrossoverOperator(Box::new(
-    //     //     PartiallyMappedCrossover {},
-    //     // )))
-    //     .mutation_operator(Box::new(InverseMutation {}))
-    //     .selection_operator(Box::new(&selector))
-    //     // .selection_operator(Box::new(&roullette_selector))
-    //     .build()?];
-
-    let mut solver = EvolutionaryAlgorithmBuilder::new()
-        .population_size(50)
-        .generations(1000)
-        .crossover_prob(0.2)
-        .mutation_prob(0.3)
-        .logger(Box::new(logger))
-        .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
-            OrderedCrossover {},
-        )))
-        // .crossover_operator(CrossoverOperator::TwoChildrenCrossoverOperator(Box::new(
-        //     PartiallyMappedCrossover {},
-        // )))
-        .mutation_operator(Box::new(InverseMutation {}))
-        .selection_operator(Box::new(&selector))
-        // .selection_operator(Box::new(&roullette_selector))
-        .build()
-        .expect("Failed to create EA");
-
-    let mut greedy = GreedyAlgorithm::new(&problem);
-    let greedy_solution = greedy.solve().expect("Failed to greedy");
-
-    println!("Greedy {:?}", greedy_solution);
-    println!(
-        "Greedy quality {:?}",
-        problem.eval(&greedy_solution).unwrap()
-    );
-
-    match solver.solve(&problem) {
-        Err(err) => {
-            println!("Failed to solve test data {}", err)
-        }
-        Ok(val) => {
-            println!("Solution {:?}", problem.serialize_indiviual(&val));
-            println!("Quality {:?}", problem.eval(&val).unwrap());
-        }
+    for instance in instances.iter() {
+        get_configuration(&format!(
+            "{}-selection",
+            instance.split('/').last().unwrap()
+        ))
+        .unwrap()
+        .iter_mut()
+        .for_each(|configuration| {
+            let problem_contents = read_to_string(instance).unwrap();
+            let mut problem = problem_loader::CVRProblem::from(problem_contents);
+            problem.precalculate_distances();
+            match configuration.solve(&problem) {
+                Err(err) => {
+                    println!("failed to solve test data {}", err)
+                }
+                Ok(val) => {
+                    println!("Solved at: {}", val.0)
+                }
+            }
+        });
     }
+
+    // run_comparisons()
 }

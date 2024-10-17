@@ -39,7 +39,8 @@ impl Population {
     }
 
     pub fn replace_subpopulation(&mut self, mut population: Population) {
-        self.individuals.drain(0..population.number_of_solutions());
+        self.individuals
+            .drain(0..(std::cmp::min(population.number_of_solutions(), self.individuals.len())));
         self.individuals.append(&mut population.individuals);
     }
 

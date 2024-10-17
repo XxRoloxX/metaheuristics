@@ -1,7 +1,10 @@
 use anyhow::Result;
 
-use crate::{individual::VecIndividual, problem::Problem};
+use crate::{
+    individual::{Fitness, VecIndividual},
+    problem::Problem,
+};
 
-pub trait Solver<'a> {
-    fn solve(&'a mut self, problem: &'a dyn Problem) -> Result<VecIndividual>;
+pub trait Solver {
+    fn solve(&mut self, problem: &dyn Problem) -> Result<(Fitness, VecIndividual)>;
 }

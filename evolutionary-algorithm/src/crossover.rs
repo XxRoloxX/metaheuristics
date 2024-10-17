@@ -11,6 +11,7 @@ pub trait SingleChildCrossoverOperator {
         individual_a: &VecIndividual,
         individual_b: &VecIndividual,
     ) -> VecIndividual;
+    fn name(&self) -> String;
 }
 
 pub trait TwoChildrenCrossoverOperator {
@@ -19,6 +20,8 @@ pub trait TwoChildrenCrossoverOperator {
         individual_a: &VecIndividual,
         individual_b: &VecIndividual,
     ) -> Result<(VecIndividual, VecIndividual)>;
+
+    fn name(&self) -> String;
 }
 
 pub enum CrossoverOperator {
@@ -26,9 +29,21 @@ pub enum CrossoverOperator {
     TwoChildrenCrossoverOperator(Box<dyn TwoChildrenCrossoverOperator>),
 }
 
+impl CrossoverOperator {
+    pub fn name(&self) -> String {
+        match self {
+            Self::SingleChildCrossoverOperator(operator) => operator.name(),
+            Self::TwoChildrenCrossoverOperator(operator) => operator.name(),
+        }
+    }
+}
+
 pub struct OrderedCrossover {}
 
 impl SingleChildCrossoverOperator for OrderedCrossover {
+    fn name(&self) -> String {
+        String::from("ordered")
+    }
     fn crossover(
         &self,
         individual_a: &VecIndividual,
@@ -136,6 +151,9 @@ impl PartiallyMappedCrossover {
 }
 
 impl TwoChildrenCrossoverOperator for PartiallyMappedCrossover {
+    fn name(&self) -> String {
+        String::from("partially-mapped")
+    }
     fn crossover(
         &self,
         individual_a: &VecIndividual,
