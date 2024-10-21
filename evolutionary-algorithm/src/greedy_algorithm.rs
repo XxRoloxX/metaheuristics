@@ -1,15 +1,10 @@
 use anyhow::{Context, Result};
 
 use crate::{
-    individual::{Fitness, Gene, VecIndividual},
-    problem::Problem,
+    individual::{Gene, VecIndividual},
     problem_loader::{CVRProblem, Demand},
-    solver::Solver,
 };
 
-// Teoria wybranych elementów, operatory, funkcjie oceniające wykresy, porównanie losowego/greedy i
-// AE
-//
 type Node = Gene;
 
 struct TripState {
@@ -23,23 +18,23 @@ pub struct GreedyAlgorithm<'a> {
     problem: &'a CVRProblem,
 }
 
-// impl<'a> Solver for GreedyAlgorithm<'a> {
-//     fn solve(&mut self, problem: &dyn Problem) -> Result<(Fitness, VecIndividual)> {
-//
-//     }
-// }
-
 impl<'a> GreedyAlgorithm<'a> {
     pub fn new(problem: &'a CVRProblem) -> Self {
         GreedyAlgorithm { problem }
     }
 
-    pub fn solve(&mut self) -> Result<VecIndividual> {
+    pub fn solve(&mut self, first_node: Gene) -> Result<VecIndividual> {
         let initial = TripState {
-            current_node: self.problem.closest_depot(),
-            resources: self.problem.capacity(),
-            visited_nodes: Vec::new(),
-            unvisited_nodes: self.problem.stops().clone(),
+            current_node: first_node,
+            resources: self.problem.capacity() - self.problem.demands(&first_node)?,
+            visited_nodes: vec![],
+            unvisited_nodes: self
+                .problem
+                .stops()
+                .iter()
+                .filter(|stop| **stop != first_node)
+                .copied()
+                .collect::<Vec<Gene>>(),
         };
 
         let mut res = (0..initial.unvisited_nodes.len()).try_fold(
@@ -52,6 +47,13 @@ impl<'a> GreedyAlgorithm<'a> {
                     .filter(|val| *val != closest_node)
                     .collect::<Vec<Node>>();
 
+                if self.need_trip_to_depot(&accum, closest_node)? {
+                    accum.resources =
+                        self.problem.capacity() - self.problem.demands(&closest_node)?
+                } else {
+                    accum.resources -= self.problem.demands(&closest_node)?
+                }
+
                 accum.visited_nodes.push(accum.current_node);
                 accum.current_node = closest_node;
                 Ok(accum)
@@ -59,9 +61,6 @@ impl<'a> GreedyAlgorithm<'a> {
         )?;
 
         res.visited_nodes.push(res.current_node);
-
-        //Remove first depot from the list (it shouldn't be encoded into a solution)
-        res.visited_nodes.remove(0);
 
         Ok(VecIndividual::from(&res.visited_nodes))
     }

@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use anyhow::{anyhow, bail, Context, Error, Result};
+use anyhow::{anyhow, Result};
 
 use crate::individual::{Gene, VecIndividual};
 mod tests;
@@ -129,7 +129,6 @@ impl PartiallyMappedCrossover {
         middle_section_to_replace: Vec<Gene>,
     ) -> Result<Vec<Gene>> {
         let mut offspring: Vec<Gene> = Vec::new();
-        // 12543, 2->3, 1->5,
 
         for (index, parent_gene) in parent.iter().enumerate() {
             if (middle_section_start_index
@@ -138,10 +137,6 @@ impl PartiallyMappedCrossover {
             {
                 offspring.push(middle_section_to_replace[index - middle_section_start_index])
             } else {
-                // match translation_map.get(parent_gene) {
-                //     Some(translated_gene) => offspring.push(translated_gene[0]),
-                //     None => offspring.push(*parent_gene),
-                // }
                 offspring.push(self.get_translated_gene(translation_map, *parent_gene));
             }
         }
@@ -160,15 +155,6 @@ impl TwoChildrenCrossoverOperator for PartiallyMappedCrossover {
         individual_b: &VecIndividual,
     ) -> Result<(VecIndividual, VecIndividual)> {
         let (start_index, end_index) = individual_a.random_gene_range_indexes();
-
-        // let (start_index, end_index) = (1, 3);
-        // let individual_a = VecIndividual::from(vec![4, 1, 3, 2, 5]);
-        // let individual_b = VecIndividual::from(vec![4, 5, 1, 3, 2]);
-        // let (start_index, end_index) = (2, 5);
-        // ind_a 4,1,3,2,5
-        // ind_b 4,5,1,3,2
-        // start_inx =1, end_index=3
-        //
 
         let mut translation_map_a: HashMap<Gene, Vec<Gene>> = HashMap::new();
         let mut translation_map_b: HashMap<Gene, Vec<Gene>> = HashMap::new();

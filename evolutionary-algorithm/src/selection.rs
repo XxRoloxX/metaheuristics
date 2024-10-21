@@ -67,12 +67,13 @@ impl RouletteSelector {
             (0..population.number_of_solutions()).zip(1..population.number_of_solutions());
 
         for (individual_idx, next_individual_idx) in populations_iter {
-            summed_probability += probabilities[individual_idx];
             if selected_probability >= summed_probability
-                && selected_probability < summed_probability + probabilities[next_individual_idx]
+                && selected_probability < summed_probability + probabilities[individual_idx]
             {
                 return Ok(&population.solutions()[individual_idx]);
             }
+
+            summed_probability += probabilities[individual_idx];
         }
 
         population
@@ -91,16 +92,34 @@ impl Selector for RouletteSelector {
         let mut probabilities: Vec<f32> = Vec::new();
         let mut rng = rand::thread_rng();
 
-        let score_sum: Fitness = population
+        let scores: Vec<Fitness> = population
             .solutions()
             .iter()
             .map(|sol| problem.eval(sol))
-            .collect::<Result<Vec<Fitness>>>()?
+            .collect::<Result<Vec<Fitness>>>()?;
+        // .iter()
+        // .sum();
+        //
+        let min_score = scores
             .iter()
+            .min_by(|x, y| x.total_cmp(y))
+            .context("Failed to compare scores")?;
+        let max_score = scores
+            .iter()
+            .max_by(|x, y| x.total_cmp(y))
+            .context("Failed to compare scores")?;
+
+        let scores_sum: Fitness = scores
+            .iter()
+            .map(|score| (score - min_score) / (max_score - min_score))
             .sum();
 
-        for individual in population.solutions() {
-            let probability: f32 = problem.eval(individual)? / score_sum;
+        //min
+        for score in scores
+            .iter()
+            .map(|score| (score - min_score) / (max_score - min_score))
+        {
+            let probability: f32 = score / scores_sum;
             probabilities.push(probability);
         }
 

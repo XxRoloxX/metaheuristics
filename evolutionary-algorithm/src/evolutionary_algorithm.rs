@@ -3,7 +3,7 @@ use rand::Rng;
 
 use crate::{
     collector::{inverse_fitness, CSVEntry, PersistableLogger},
-    crossover::{CrossoverOperator, SingleChildCrossoverOperator},
+    crossover::CrossoverOperator,
     individual::{Fitness, VecIndividual},
     mutation::Mutation,
     population::Population,
@@ -158,12 +158,14 @@ pub struct EvolutionaryAlgorithm {
 impl EvolutionaryAlgorithm {
     fn configuration_name(&self) -> String {
         format!(
-            "population: {}, generations: {}, selection: {}, mutation: {}, crossover: {}",
+            "population: {}, generations: {}, selection: {}, mutation: {}, crossover: {}, cross_pob: {}, mut prob: {}",
             self.population_size,
             self.generations,
             self.selection_operator.name(),
             self.mutation_operator.name(),
             self.crossover_operator.name(),
+            self.crossover_prob,
+            self.mutation_prob
         )
     }
     fn create_generation(&self, problem: &dyn Problem) -> Population {
@@ -173,28 +175,6 @@ impl EvolutionaryAlgorithm {
 
         Population::new(initial_solutions)
     }
-
-    // pub fn new(
-    //     generations: u16,
-    //     population_size: u16,
-    //     selection_operator: Box<dyn Selector>,
-    //     crossover_operator: CrossoverOperator,
-    //     mutation_operator: Box<dyn Mutation>,
-    //     crossover_prob: f32,
-    //     mutation_prob: f32,
-    //     logger: Box<dyn PersistableLogger<GenerationInfo>>,
-    // ) -> Self {
-    //     Self {
-    //         generations,
-    //         population_size,
-    //         selection_operator,
-    //         crossover_prob,
-    //         mutation_prob,
-    //         mutation_operator,
-    //         crossover_operator,
-    //         logger,
-    //     }
-    // }
 
     fn crossover(&self, mut population: Population) -> Result<(Population, usize)> {
         let mut rng = rand::thread_rng();

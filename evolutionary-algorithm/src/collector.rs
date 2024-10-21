@@ -77,7 +77,6 @@ where
             .collect::<Vec<String>>()
             .join("\n");
 
-        // let mut output_file = File::create(&self.output_filename)?;
         let mut output_file = OpenOptions::new()
             .create(true)
             .append(true)

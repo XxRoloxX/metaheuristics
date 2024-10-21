@@ -112,11 +112,14 @@ fn test_ea(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
         .collect::<Vec<Fitness>>()
 }
 
-fn test_greedy(problem: &CVRProblem, repeats: u16) -> Vec<Fitness> {
+fn test_greedy(problem: &CVRProblem) -> Vec<Fitness> {
     let mut greedy = GreedyAlgorithm::new(problem);
-    (0..repeats)
-        .map(|_| {
-            let solution = greedy.solve().unwrap();
+    problem
+        .random_individual()
+        .genes()
+        .iter()
+        .map(|gene| {
+            let solution = greedy.solve(*gene).unwrap();
             problem.eval(&solution).unwrap()
         })
         .collect::<Vec<Fitness>>()
@@ -155,7 +158,7 @@ pub fn run_comparisons() {
     ];
 
     let mut logger: CSVLogger<ScoreSet> =
-        CSVLogger::new("comparisons.csv", Some(ScoreSet::headers()));
+        CSVLogger::new("comparisons-greedy-fix2.csv", Some(ScoreSet::headers()));
 
     for instance in instances {
         let problem_contents = read_to_string(instance).unwrap();
@@ -165,7 +168,7 @@ pub fn run_comparisons() {
         let ea_scores = test_ea(&problem, 10);
         let ea_summary = Score::new(ea_scores);
 
-        let greedy_scores = test_greedy(&problem, 200);
+        let greedy_scores = test_greedy(&problem);
         let greedy_summary = Score::new(greedy_scores);
 
         let random_scores = test_random(&problem, 10000);
