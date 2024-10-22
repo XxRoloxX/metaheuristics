@@ -1,0 +1,8 @@
+services:
+  notebook:
+    image: quay.io/jupyter/base-notebook
+    ports:
+      - "8889:8888"
+    command: start-notebook.py --NotebookApp.token='my-token'
+    volumes:
+      - "./csv:/home/jovyan/work"

@@ -75,25 +75,6 @@ impl Population {
 
     pub fn highest_fitness(&self, problem: &dyn Problem) -> (&VecIndividual, Fitness) {
         Population::individual_with_highest_fitness(problem, self.solutions())
-
-        // let solution = self
-        //     .solutions()
-        //     .iter()
-        //     .max_by(|solution_a, solution_b| {
-        //         let eval_a = problem
-        //             .eval(solution_a)
-        //             .expect("VecIndividual should be valid for the problem");
-        //         let eval_b = problem
-        //             .eval(solution_b)
-        //             .expect("VecIndividual should be valid for the problem");
-        //
-        //         eval_a
-        //             .partial_cmp(&eval_b)
-        //             .expect("VecIndividual evaluations should be comparable")
-        //     })
-        //     .unwrap();
-        //
-        // (solution, problem.eval(solution).unwrap())
     }
 
     pub fn lowest_fitness(&self, problem: &dyn Problem) -> (&VecIndividual, Fitness) {

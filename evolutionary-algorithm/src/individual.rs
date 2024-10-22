@@ -3,7 +3,7 @@ use rand::RngCore;
 pub type Gene = u16;
 pub type Fitness = f32;
 
-#[derive(Debug, Default)]
+#[derive(Debug, Default, Clone, PartialEq)]
 pub struct VecIndividual {
     genes: Vec<Gene>,
 }

@@ -1,16 +1,22 @@
 use std::fs::read_to_string;
 
 use crate::{
-    collector::{inverse_fitness, CSVEntry, CSVLogger, PersistableLogger},
-    crossover::{CrossoverOperator, OrderedCrossover},
-    evolutionary_algorithm::{EvolutionaryAlgorithm, EvolutionaryAlgorithmBuilder},
+    evolutionary_algorithm::{
+        algorithm::{EvolutionaryAlgorithm, EvolutionaryAlgorithmBuilder},
+        crossover::{CrossoverOperator, OrderedCrossover},
+        mutation::SwapMutation,
+        selection::TournamentSelector,
+    },
     greedy_algorithm::GreedyAlgorithm,
     individual::Fitness,
-    mutation::SwapMutation,
+    logger::{inverse_fitness, CSVEntry, CSVLogger, PersistableLogger},
     problem::Problem,
     problem_loader::CVRProblem,
-    selection::TournamentSelector,
     solver::Solver,
+    tabu_search::{
+        algorithm::{TabuSearch, TabuSearchBuilder},
+        neighbor::SwapNeighborhoodOperator,
+    },
 };
 
 pub struct Score {
@@ -42,6 +48,7 @@ impl Score {
 pub struct ScoreSet {
     instance: String,
     ea: Score,
+    tabu: Score,
     random: Score,
     greedy: Score,
 }
@@ -62,6 +69,10 @@ impl ScoreSet {
             String::from("Evolutionary: worst"),
             String::from("Evolutionary: avg"),
             String::from("Evolutionary: std"),
+            String::from("Tabu: best"),
+            String::from("Tabu: worst"),
+            String::from("Tabu: avg"),
+            String::from("Tabu: std"),
         ]
     }
 }
@@ -82,6 +93,10 @@ impl From<&ScoreSet> for CSVEntry {
             score_set.ea.worst.to_string(),
             score_set.ea.avg.to_string(),
             score_set.ea.std.to_string(),
+            score_set.tabu.best.to_string(),
+            score_set.tabu.worst.to_string(),
+            score_set.tabu.avg.to_string(),
+            score_set.tabu.std.to_string(),
         ])
     }
 }
@@ -102,8 +117,31 @@ fn optimal_ea() -> EvolutionaryAlgorithm {
         .unwrap()
 }
 
+fn optimal_tabu() -> TabuSearch {
+    TabuSearchBuilder::default()
+        .iterations(1000)
+        .tabu_list_size(100)
+        .neighborhood_operator(Box::new(SwapNeighborhoodOperator::new(10)))
+        .logger(Box::new(CSVLogger::new(
+            format!("{}-tabu", "comparisons").as_str(),
+            None,
+        )))
+        .build()
+        .unwrap()
+}
+
 fn test_ea(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
     let mut ea = optimal_ea();
+    (0..repeats)
+        .map(|_| {
+            let (score, _) = ea.solve(problem).unwrap();
+            score
+        })
+        .collect::<Vec<Fitness>>()
+}
+
+fn test_taboo(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
+    let mut ea = optimal_tabu();
     (0..repeats)
         .map(|_| {
             let (score, _) = ea.solve(problem).unwrap();
@@ -173,11 +211,15 @@ pub fn run_comparisons() {
 
         let random_scores = test_random(&problem, 10000);
         let random_summary = Score::new(random_scores);
+
+        let tabu_scores = test_taboo(&problem, 10);
+        let tabu_summary = Score::new(tabu_scores);
         logger.log(ScoreSet {
             instance: String::from(instance),
             ea: ea_summary,
             random: random_summary,
             greedy: greedy_summary,
+            tabu: tabu_summary,
         })
     }
 
