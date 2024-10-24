@@ -19,8 +19,20 @@ pub struct TabuSearch {
     neighborhood_operator: Box<dyn NeighborOperator>,
 }
 
+impl TabuSearch {
+    fn configuration_name(&self) -> String {
+        format!(
+            "iterations: {}, tabu_size: {}, neighborhood_operator: {}",
+            self.iterations,
+            self.tabu_list_size,
+            self.neighborhood_operator.name()
+        )
+    }
+}
+
 #[derive(Default)]
 pub struct IterationInfo {
+    configuration: String,
     iteration: u32,
     tabu_list_size: usize,
     best_fitness: Fitness,
@@ -31,6 +43,7 @@ pub struct IterationInfo {
 
 impl IterationInfo {
     pub fn new(
+        configuration: String,
         iteration: u32,
         tabu_list_size: usize,
         neighbours: Population,
@@ -41,6 +54,7 @@ impl IterationInfo {
         let (_, worst_fitness) = neighbours.lowest_fitness(problem);
         let average_fitness = neighbours.average_fitness(problem);
         IterationInfo {
+            configuration,
             iteration,
             tabu_list_size,
             best_fitness,
@@ -54,6 +68,7 @@ impl IterationInfo {
 impl From<&IterationInfo> for CSVEntry {
     fn from(val: &IterationInfo) -> Self {
         CSVEntry::from(vec![
+            val.configuration.to_string(),
             val.iteration.to_string(),
             val.tabu_list_size.to_string(),
             inverse_fitness(val.best_fitness).to_string(),
@@ -91,6 +106,7 @@ impl Solver for TabuSearch {
             }
 
             self.logger.log(IterationInfo::new(
+                self.configuration_name(),
                 iteration,
                 tabu_list.len(),
                 population,

@@ -16,7 +16,7 @@ impl SwapNeighborhoodOperator {
 
 impl NeighborOperator for SwapNeighborhoodOperator {
     fn name(&self) -> String {
-        String::from("swap")
+        format!("swap ({})", self.neighborhood_size)
     }
     fn get_neighborhood(&self, individual: &VecIndividual) -> Vec<VecIndividual> {
         (0..self.neighborhood_size)
@@ -44,7 +44,7 @@ impl InverseNeighborhoodOperator {
 
 impl NeighborOperator for InverseNeighborhoodOperator {
     fn name(&self) -> String {
-        String::from("inverse")
+        format!("inverse ({})", self.neighborhood_size)
     }
 
     fn get_neighborhood(&self, individual: &VecIndividual) -> Vec<VecIndividual> {

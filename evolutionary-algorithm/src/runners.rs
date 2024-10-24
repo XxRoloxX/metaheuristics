@@ -193,6 +193,8 @@ pub fn run_comparisons() {
         "./src/problem-instances/A-n39-k5.txt",
         "./src/problem-instances/A-n45-k7.txt",
         "./src/problem-instances/A-n48-k7.txt",
+        "./src/problem-instances/A-n54-k7.txt",
+        "./src/problem-instances/A-n60-k9.txt",
     ];
 
     let mut logger: CSVLogger<ScoreSet> =
