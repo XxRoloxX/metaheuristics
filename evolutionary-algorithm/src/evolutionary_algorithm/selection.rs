@@ -97,9 +97,7 @@ impl Selector for RouletteSelector {
             .iter()
             .map(|sol| problem.eval(sol))
             .collect::<Result<Vec<Fitness>>>()?;
-        // .iter()
-        // .sum();
-        //
+
         let min_score = scores
             .iter()
             .min_by(|x, y| x.total_cmp(y))
@@ -114,7 +112,6 @@ impl Selector for RouletteSelector {
             .map(|score| (score - min_score) / (max_score - min_score))
             .sum();
 
-        //min
         for score in scores
             .iter()
             .map(|score| (score - min_score) / (max_score - min_score))
@@ -124,7 +121,7 @@ impl Selector for RouletteSelector {
         }
 
         for _ in 0..population.number_of_solutions() {
-            let random_probality: f32 = (rng.next_u32() % 100) as f32 / (100 as f32);
+            let random_probality: f32 = (rng.next_u32() % 100) as f32 / (100f32);
             let child =
                 self.find_individual_by_probability(&population, &probabilities, random_probality)?;
 

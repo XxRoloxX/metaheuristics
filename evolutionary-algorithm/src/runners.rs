@@ -10,13 +10,16 @@ use crate::{
     greedy_algorithm::GreedyAlgorithm,
     individual::Fitness,
     logger::{inverse_fitness, CSVEntry, CSVLogger, PersistableLogger},
+    neighbor::SwapNeighborhoodOperator,
     problem::Problem,
     problem_loader::CVRProblem,
-    solver::Solver,
-    tabu_search::{
-        algorithm::{TabuSearch, TabuSearchBuilder},
-        neighbor::SwapNeighborhoodOperator,
+    simulated_annealing::{
+        algorithm::{SimulatedAnnealing, SimulatedAnnealingBuilder},
+        cooling_schedule::ExponentialCoolingScheduleBuilder,
+        criterion_operator::BoltzmanProbabilityCriterionOperator,
     },
+    solver::Solver,
+    tabu_search::algorithm::{TabuSearch, TabuSearchBuilder},
 };
 
 pub struct Score {
@@ -51,6 +54,7 @@ pub struct ScoreSet {
     tabu: Score,
     random: Score,
     greedy: Score,
+    sa: Score,
 }
 
 impl ScoreSet {
@@ -73,6 +77,10 @@ impl ScoreSet {
             String::from("Tabu: worst"),
             String::from("Tabu: avg"),
             String::from("Tabu: std"),
+            String::from("SA: best"),
+            String::from("SA: worst"),
+            String::from("SA: avg"),
+            String::from("SA: std"),
         ]
     }
 }
@@ -97,6 +105,10 @@ impl From<&ScoreSet> for CSVEntry {
             score_set.tabu.worst.to_string(),
             score_set.tabu.avg.to_string(),
             score_set.tabu.std.to_string(),
+            score_set.sa.best.to_string(),
+            score_set.sa.worst.to_string(),
+            score_set.sa.avg.to_string(),
+            score_set.sa.std.to_string(),
         ])
     }
 }
@@ -130,6 +142,23 @@ fn optimal_tabu() -> TabuSearch {
         .unwrap()
 }
 
+fn optimal_sa() -> SimulatedAnnealing {
+    SimulatedAnnealingBuilder::default()
+        .iterations(10000)
+        .cooling_schedule(Box::new(
+            ExponentialCoolingScheduleBuilder::default()
+                .initial_temperature(1f32)
+                .cooling_factor(0.99f32)
+                .build()
+                .unwrap(),
+        ))
+        .neighbor_operator(Box::new(SwapNeighborhoodOperator::new(20)))
+        .criterion_operator(Box::new(BoltzmanProbabilityCriterionOperator {}))
+        .logger(Box::new(CSVLogger::new("sa-comparisions", None)))
+        .build()
+        .unwrap()
+}
+
 fn test_ea(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
     let mut ea = optimal_ea();
     (0..repeats)
@@ -142,6 +171,15 @@ fn test_ea(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
 
 fn test_taboo(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
     let mut ea = optimal_tabu();
+    (0..repeats)
+        .map(|_| {
+            let (score, _) = ea.solve(problem).unwrap();
+            score
+        })
+        .collect::<Vec<Fitness>>()
+}
+fn test_sa(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
+    let mut ea = optimal_sa();
     (0..repeats)
         .map(|_| {
             let (score, _) = ea.solve(problem).unwrap();
@@ -198,7 +236,7 @@ pub fn run_comparisons() {
     ];
 
     let mut logger: CSVLogger<ScoreSet> =
-        CSVLogger::new("comparisons-greedy-fix2.csv", Some(ScoreSet::headers()));
+        CSVLogger::new("comparisons-sa.csv", Some(ScoreSet::headers()));
 
     for instance in instances {
         let problem_contents = read_to_string(instance).unwrap();
@@ -216,12 +254,16 @@ pub fn run_comparisons() {
 
         let tabu_scores = test_taboo(&problem, 10);
         let tabu_summary = Score::new(tabu_scores);
+
+        let sa_scores = test_sa(&problem, 10);
+        let sa_summary = Score::new(sa_scores);
         logger.log(ScoreSet {
             instance: String::from(instance),
             ea: ea_summary,
             random: random_summary,
             greedy: greedy_summary,
             tabu: tabu_summary,
+            sa: sa_summary,
         })
     }
 

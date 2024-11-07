@@ -1,17 +1,11 @@
-use std::fs::read_to_string;
+use pprof::protos::Message;
+use std::io::Write;
+// use protobuf::Message;
+use std::fs::{read_to_string, File};
 
 use evolutionary_algorithm::{
-    evolutionary_algorithm::tests::{
-        get_ea_configuration, get_ea_crossover_configuration, get_ea_mutation_configuration,
-    },
-    logger::inverse_fitness,
-    problem_loader,
-    runners::run_comparisons,
-    solver::Solver,
-    tabu_search::tests::{
-        get_tabu_search_general_configurations, get_tabu_search_neighbors,
-        get_tabu_search_scores_comparison_configurations,
-    },
+    logger::inverse_fitness, problem_loader, runners::run_comparisons,
+    simulated_annealing::tests::get_simulated_annealing_config,
 };
 
 fn main() {
@@ -24,12 +18,15 @@ fn main() {
         // "./src/problem-instances/A-n54-k7.txt",
         // "./src/problem-instances/A-n60-k9.txt",
     ];
+    // let guard = pprof::ProfilerGuardBuilder::default()
+    //     .frequency(1000)
+    //     // .blocklist(&["libc", "libgcc", "pthread", "vdso"])
+    //     .build()
+    //     .unwrap();
 
     for instance in instances.iter() {
-        // get_ea_configuration(&format!(
-        //     "./csv/ea-parameters-{}",
-        get_tabu_search_neighbors(&format!(
-            "./csv/tabu-neighbors-{}",
+        get_simulated_annealing_config(&format!(
+            "./csv/simulated-annealing-{}",
             instance
                 .split('/')
                 .last()
@@ -55,6 +52,28 @@ fn main() {
             }
         });
     }
+    //
+    // if let Ok(report) = guard.report().build() {
+    //     let mut file = File::create("profile.pb").expect("Failed to create file");
+    //     let profile = report.pprof().expect("Failed to create pprof");
+    //
+    //     let mut flames = File::create("flames.svg").expect("Failed to create flames");
+    //
+    //     report.flamegraph(&mut flames).expect("flames");
+    //
+    //     if let Err(er) = profile.write_to_writer(&mut file) {
+    //         println!("Failed to write {}", er)
+    //     }
+    //
+    //     /*
+    //     let mut content = Vec::new();
+    //     report.flame
+    //     profile.encode(&mut content).unwrap();
+    //     file.write_all(&content).unwrap();
+    //     */
+    //
+    //     println!("report: {:?}", &report);
+    // };
 
     // run_comparisons()
 }

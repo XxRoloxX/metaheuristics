@@ -1,5 +1,3 @@
-use std::f32::INFINITY;
-
 use anyhow::{Context, Result};
 
 use crate::{
@@ -10,7 +8,7 @@ use crate::{
     solver::Solver,
 };
 
-use super::neighbor::NeighborOperator;
+use crate::neighbor::NeighborOperator;
 
 pub struct TabuSearch {
     iterations: u32,

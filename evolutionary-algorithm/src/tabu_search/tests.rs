@@ -2,10 +2,9 @@ use anyhow::Result;
 
 use crate::{logger::CSVLogger, solver::Solver};
 
-use super::{
-    algorithm::TabuSearchBuilder,
-    neighbor::{InverseNeighborhoodOperator, SwapNeighborhoodOperator},
-};
+use crate::neighbor::{InverseNeighborhoodOperator, SwapNeighborhoodOperator};
+
+use super::algorithm::TabuSearchBuilder;
 
 pub fn get_tabu_search_scores_comparison_configurations(
     instance: &str,
