@@ -9,6 +9,7 @@ pub trait CriterionOperator {
     fn name(&self) -> String;
 }
 
+#[derive(Clone)]
 pub struct BoltzmanProbabilityCriterionOperator {}
 
 impl CriterionOperator for BoltzmanProbabilityCriterionOperator {

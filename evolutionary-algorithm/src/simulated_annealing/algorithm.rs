@@ -7,7 +7,6 @@ use crate::{
     solver::Solver,
 };
 use anyhow::{Context, Result};
-use rand::{thread_rng, Rng};
 
 use super::{cooling_schedule::CoolingSchedule, criterion_operator::CriterionOperator};
 
