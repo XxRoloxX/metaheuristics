@@ -225,25 +225,35 @@ fn calculate_std_dev(data: &[Fitness]) -> Fitness {
 }
 
 pub fn run_comparisons() {
+    //let instances: Vec<&str> = vec![
+    //    "./src/problem-instances/A-n32-k5.txt",
+    //    "./src/problem-instances/A-n37-k5.txt",
+    //    "./src/problem-instances/A-n39-k5.txt",
+    //    "./src/problem-instances/A-n45-k7.txt",
+    //    "./src/problem-instances/A-n48-k7.txt",
+    //    "./src/problem-instances/A-n54-k7.txt",
+    //    "./src/problem-instances/A-n60-k9.txt",
+    //];
+    //
     let instances: Vec<&str> = vec![
-        "./src/problem-instances/A-n32-k5.txt",
-        "./src/problem-instances/A-n37-k5.txt",
-        "./src/problem-instances/A-n39-k5.txt",
-        "./src/problem-instances/A-n45-k7.txt",
-        "./src/problem-instances/A-n48-k7.txt",
-        "./src/problem-instances/A-n54-k7.txt",
-        "./src/problem-instances/A-n60-k9.txt",
+        "./csv/A-n32-k5",
+        "./csv/A-n37-k6",
+        "./csv/A-n39-k5",
+        "./csv/A-n45-k6",
+        "./csv/A-n48-k7",
+        "./csv/A-n54-k7",
+        "./csv/A-n60-k9",
     ];
 
     let mut logger: CSVLogger<ScoreSet> =
-        CSVLogger::new("comparisons-sa.csv", Some(ScoreSet::headers()));
+        CSVLogger::new("./csv/comparisons-sa.csv", Some(ScoreSet::headers()));
 
     for instance in instances {
         let problem_contents = read_to_string(instance).unwrap();
         let mut problem = CVRProblem::from(problem_contents);
         problem.precalculate_distances();
 
-        let ea_scores = test_ea(&problem, 10);
+        let ea_scores = test_ea(&problem, 1);
         let ea_summary = Score::new(ea_scores);
 
         let greedy_scores = test_greedy(&problem);
@@ -252,10 +262,10 @@ pub fn run_comparisons() {
         let random_scores = test_random(&problem, 10000);
         let random_summary = Score::new(random_scores);
 
-        let tabu_scores = test_taboo(&problem, 10);
+        let tabu_scores = test_taboo(&problem, 1);
         let tabu_summary = Score::new(tabu_scores);
 
-        let sa_scores = test_sa(&problem, 10);
+        let sa_scores = test_sa(&problem, 1);
         let sa_summary = Score::new(sa_scores);
         logger.log(ScoreSet {
             instance: String::from(instance),
