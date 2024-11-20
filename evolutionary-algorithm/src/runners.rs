@@ -118,13 +118,13 @@ fn optimal_ea() -> EvolutionaryAlgorithm {
         .population_size(500)
         .generations(500)
         .crossover_prob(0.7)
-        .mutation_prob(0.5)
+        .mutation_prob(0.6)
         .logger(Box::new(CSVLogger::new("comparisons", None)))
         .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
             OrderedCrossover {},
         )))
         .mutation_operator(Box::new(SwapMutation {}))
-        .selection_operator(Box::new(TournamentSelector::new(5)))
+        .selection_operator(Box::new(TournamentSelector::new(10)))
         .build()
         .unwrap()
 }
@@ -132,8 +132,8 @@ fn optimal_ea() -> EvolutionaryAlgorithm {
 fn optimal_tabu() -> TabuSearch {
     TabuSearchBuilder::default()
         .iterations(1000)
-        .tabu_list_size(100)
-        .neighborhood_operator(Box::new(SwapNeighborhoodOperator::new(10)))
+        .tabu_list_size(20)
+        .neighborhood_operator(Box::new(SwapNeighborhoodOperator::new(40)))
         .logger(Box::new(CSVLogger::new(
             format!("{}-tabu", "comparisons").as_str(),
             None,
@@ -148,11 +148,11 @@ fn optimal_sa() -> SimulatedAnnealing {
         .cooling_schedule(Box::new(
             ExponentialCoolingScheduleBuilder::default()
                 .initial_temperature(1f32)
-                .cooling_factor(0.99f32)
+                .cooling_factor(0.999f32)
                 .build()
                 .unwrap(),
         ))
-        .neighbor_operator(Box::new(SwapNeighborhoodOperator::new(20)))
+        .neighbor_operator(Box::new(SwapNeighborhoodOperator::new(40)))
         .criterion_operator(Box::new(BoltzmanProbabilityCriterionOperator {}))
         .logger(Box::new(CSVLogger::new("sa-comparisions", None)))
         .build()
@@ -253,7 +253,7 @@ pub fn run_comparisons() {
         let mut problem = CVRProblem::from(problem_contents);
         problem.precalculate_distances();
 
-        let ea_scores = test_ea(&problem, 1);
+        let ea_scores = test_ea(&problem, 10);
         let ea_summary = Score::new(ea_scores);
 
         let greedy_scores = test_greedy(&problem);
@@ -262,10 +262,10 @@ pub fn run_comparisons() {
         let random_scores = test_random(&problem, 10000);
         let random_summary = Score::new(random_scores);
 
-        let tabu_scores = test_taboo(&problem, 1);
+        let tabu_scores = test_taboo(&problem, 10);
         let tabu_summary = Score::new(tabu_scores);
 
-        let sa_scores = test_sa(&problem, 1);
+        let sa_scores = test_sa(&problem, 10);
         let sa_summary = Score::new(sa_scores);
         logger.log(ScoreSet {
             instance: String::from(instance),

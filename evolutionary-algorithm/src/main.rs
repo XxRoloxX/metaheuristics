@@ -5,18 +5,80 @@
 use std::fs::read_to_string;
 
 use evolutionary_algorithm::{
+    evolutionary_algorithm::tests::get_ea_best_three,
     logger::inverse_fitness,
     problem_loader,
     runners::run_comparisons,
     simulated_annealing::tests::{
         get_simulated_annealing_best_three, get_simulated_annealing_config,
     },
+    solver::Solver,
+    tabu_search::tests::get_tabu_search_best_three,
 };
 
 fn run_simulated_annealing_precision(instances: &Vec<&str>) {
     for instance in instances.iter() {
         get_simulated_annealing_best_three(&format!(
             "./csv/simulated-annealing-best-{}",
+            instance
+                .split('/')
+                .last()
+                .into_iter()
+                .collect::<Vec<&str>>()
+                .first()
+                .unwrap()
+        ))
+        .unwrap()
+        .iter_mut()
+        .for_each(|configuration| {
+            let problem_contents = read_to_string(instance).unwrap();
+            let mut problem = problem_loader::CVRProblem::from(problem_contents);
+            problem.precalculate_distances();
+            match configuration.solve(&problem) {
+                Err(err) => {
+                    println!("failed to solve test data {}", err)
+                }
+                Ok(val) => {
+                    println!("Solved at: {}", inverse_fitness(val.0))
+                }
+            }
+        });
+    }
+}
+fn run_simulated_tabu_seatch(instances: &Vec<&str>) {
+    for instance in instances.iter() {
+        get_tabu_search_best_three(&format!(
+            "./csv/tabu-search-best-{}",
+            instance
+                .split('/')
+                .last()
+                .into_iter()
+                .collect::<Vec<&str>>()
+                .first()
+                .unwrap()
+        ))
+        .unwrap()
+        .iter_mut()
+        .for_each(|configuration| {
+            let problem_contents = read_to_string(instance).unwrap();
+            let mut problem = problem_loader::CVRProblem::from(problem_contents);
+            problem.precalculate_distances();
+            match configuration.solve(&problem) {
+                Err(err) => {
+                    println!("failed to solve test data {}", err)
+                }
+                Ok(val) => {
+                    println!("Solved at: {}", inverse_fitness(val.0))
+                }
+            }
+        });
+    }
+}
+
+fn run_evolutionary_algorithm(instances: &Vec<&str>) {
+    for instance in instances.iter() {
+        get_ea_best_three(&format!(
+            "./csv/ea-best-{}",
             instance
                 .split('/')
                 .last()
@@ -112,7 +174,8 @@ fn main() {
     //
     //     println!("report: {:?}", &report);
     // };
-    run_simulated_annealing_precision(&instances);
+    // run_simulated_annealing_precision(&instances);
+    // run_evolutionary_algorithm(&instances);
 
     run_comparisons()
 }
