@@ -26,6 +26,51 @@ impl TabuSearch {
             self.neighborhood_operator.name()
         )
     }
+    //
+    //pub fn solve_with_initial(
+    //    &mut self,
+    //    problem: &dyn Problem,
+    //    configuration: String,
+    //    initial_best_solution: VecIndividual,
+    //) -> Result<(Fitness, VecIndividual)> {
+    //    let mut best_solution = initial_best_solution;
+    //    let mut tabu_list: Vec<VecIndividual> = Vec::new();
+    //    let mut best_fitness: Fitness = -f32::INFINITY;
+    //
+    //    for iteration in 0..self.iterations {
+    //        let neighbors = self.neighborhood_operator.get_neighborhood(&best_solution);
+    //        let population = Population::new(
+    //            neighbors
+    //                .into_iter()
+    //                .filter(|neighbor| !tabu_list.contains(neighbor))
+    //                .collect(),
+    //        );
+    //
+    //        let (current_solution, current_solution_fitness) = population.highest_fitness(problem);
+    //        if current_solution_fitness > best_fitness {
+    //            best_fitness = current_solution_fitness;
+    //            best_solution = current_solution.clone();
+    //        }
+    //
+    //        tabu_list.push(current_solution.clone());
+    //        if tabu_list.len() > self.tabu_list_size {
+    //            tabu_list.remove(0);
+    //        }
+    //
+    //        self.logger.log(IterationInfo::new(
+    //            self.configuration_name(),
+    //            iteration,
+    //            tabu_list.len(),
+    //            population,
+    //            problem,
+    //            best_fitness,
+    //        ));
+    //    }
+    //
+    //    self.logger.flush()?;
+    //
+    //    Ok((best_fitness, best_solution))
+    //}
 }
 
 #[derive(Default)]
@@ -159,4 +204,5 @@ impl TabuSearchBuilder {
                 .context("No neighborhood operator")?,
         })
     }
+    //}
 }

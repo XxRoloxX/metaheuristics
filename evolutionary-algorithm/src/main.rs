@@ -14,6 +14,7 @@ use evolutionary_algorithm::{
     },
     solver::Solver,
     tabu_search::tests::get_tabu_search_best_three,
+    tssa::tests::get_tssa_config,
 };
 
 fn run_simulated_annealing_precision(instances: &Vec<&str>) {
@@ -105,15 +106,47 @@ fn run_evolutionary_algorithm(instances: &Vec<&str>) {
     }
 }
 
+fn run_tssa(instances: &Vec<&str>) {
+    for instance in instances.iter() {
+        get_tssa_config(&format!(
+            "./csv/tssa-best-{}",
+            instance
+                .split('/')
+                .last()
+                .into_iter()
+                .collect::<Vec<&str>>()
+                .first()
+                .unwrap()
+        ))
+        .unwrap()
+        .iter_mut()
+        .for_each(|configuration| {
+            let problem_contents = read_to_string(instance).unwrap();
+            let mut problem = problem_loader::CVRProblem::from(problem_contents);
+            problem.precalculate_distances();
+            match configuration.solve(&problem) {
+                Err(err) => {
+                    println!("failed to solve test data {}", err)
+                }
+                Ok(val) => {
+                    println!("Solved at: {}", inverse_fitness(val.0))
+                }
+            }
+        });
+    }
+}
+
+//fn run_tssa(insta)
+
 fn main() {
     let instances: Vec<&str> = vec![
         "./csv/A-n32-k5",
-        "./csv/A-n37-k6",
-        "./csv/A-n39-k5",
-        "./csv/A-n45-k6",
-        "./csv/A-n48-k7",
-        "./csv/A-n54-k7",
-        "./csv/A-n60-k9",
+        //"./csv/A-n37-k6",
+        //"./csv/A-n39-k5",
+        //"./csv/A-n45-k6",
+        //"./csv/A-n48-k7",
+        //"./csv/A-n54-k7",
+        //"./csv/A-n60-k9",
     ];
 
     // let guard = pprof::ProfilerGuardBuilder::default()
@@ -176,6 +209,7 @@ fn main() {
     // };
     // run_simulated_annealing_precision(&instances);
     // run_evolutionary_algorithm(&instances);
+    run_tssa(&instances);
 
-    run_comparisons()
+    //run_comparisons()
 }

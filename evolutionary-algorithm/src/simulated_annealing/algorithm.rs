@@ -20,10 +20,10 @@ pub struct SimulatedAnnealing {
     logger: Box<dyn PersistableLogger<SimulatedAnnealingIterationInfo>>,
 }
 
-struct Solution {
-    individual: VecIndividual,
-    fitness: Fitness,
-    best_fitness: Fitness,
+pub struct Solution {
+    pub individual: VecIndividual,
+    pub fitness: Fitness,
+    pub best_fitness: Fitness,
 }
 
 impl Solver for SimulatedAnnealing {

@@ -10,3 +10,4 @@ pub mod runners;
 pub mod simulated_annealing;
 pub mod solver;
 pub mod tabu_search;
+pub mod tssa;
