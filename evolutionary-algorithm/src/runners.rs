@@ -5,7 +5,7 @@ use crate::{
         algorithm::{EvolutionaryAlgorithm, EvolutionaryAlgorithmBuilder},
         crossover::{CrossoverOperator, OrderedCrossover},
         mutation::SwapMutation,
-        selection::TournamentSelector,
+        selection::{SimulatedAnnealingRouletteSelector, TournamentSelector},
     },
     greedy_algorithm::GreedyAlgorithm,
     individual::Fitness,
@@ -20,6 +20,7 @@ use crate::{
     },
     solver::Solver,
     tabu_search::algorithm::{TabuSearch, TabuSearchBuilder},
+    tssa::algorithm::{TSSABuilder, TSSA},
 };
 
 pub struct Score {
@@ -55,6 +56,8 @@ pub struct ScoreSet {
     random: Score,
     greedy: Score,
     sa: Score,
+    tssa: Score,
+    saea: Score,
 }
 
 impl ScoreSet {
@@ -81,6 +84,14 @@ impl ScoreSet {
             String::from("SA: worst"),
             String::from("SA: avg"),
             String::from("SA: std"),
+            String::from("TSSA: best"),
+            String::from("TSSA: worst"),
+            String::from("TSSA: avg"),
+            String::from("TSSA: std"),
+            String::from("SAEA: best"),
+            String::from("SAEA: worst"),
+            String::from("SAEA: avg"),
+            String::from("SAEA: std"),
         ]
     }
 }
@@ -109,6 +120,14 @@ impl From<&ScoreSet> for CSVEntry {
             score_set.sa.worst.to_string(),
             score_set.sa.avg.to_string(),
             score_set.sa.std.to_string(),
+            score_set.tssa.best.to_string(),
+            score_set.tssa.worst.to_string(),
+            score_set.tssa.avg.to_string(),
+            score_set.tssa.std.to_string(),
+            score_set.saea.best.to_string(),
+            score_set.saea.worst.to_string(),
+            score_set.saea.avg.to_string(),
+            score_set.saea.std.to_string(),
         ])
     }
 }
@@ -158,6 +177,40 @@ fn optimal_sa() -> SimulatedAnnealing {
         .build()
         .unwrap()
 }
+fn optimal_tssa() -> TSSA {
+    TSSABuilder::default()
+        .iterations(20)
+        .cooling_schedule(Box::new(
+            ExponentialCoolingScheduleBuilder::default()
+                .initial_temperature(1f32)
+                .cooling_factor(0.999f32)
+                .build()
+                .unwrap(),
+        ))
+        .algorithm_switch_interval(1000)
+        .neighborhood_operator(Box::new(SwapNeighborhoodOperator::new(40)))
+        .tabu_list_size(200)
+        .criterion_operator(Box::new(BoltzmanProbabilityCriterionOperator {}))
+        .logger(Box::new(CSVLogger::new("sa-comparisions", None)))
+        .build()
+        .unwrap()
+}
+
+fn optimal_saea() -> EvolutionaryAlgorithm {
+    EvolutionaryAlgorithmBuilder::new()
+        .population_size(200)
+        .generations(1000)
+        .crossover_prob(0.6)
+        .mutation_prob(0.3)
+        .logger(Box::new(CSVLogger::new("sa-comparisions", None)))
+        .crossover_operator(CrossoverOperator::SingleChildCrossoverOperator(Box::new(
+            OrderedCrossover {},
+        )))
+        .mutation_operator(Box::new(SwapMutation {}))
+        .selection_operator(Box::new(SimulatedAnnealingRouletteSelector::new(1.0, 0.99)))
+        .build()
+        .unwrap()
+}
 
 fn test_ea(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
     let mut ea = optimal_ea();
@@ -180,6 +233,26 @@ fn test_taboo(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
 }
 fn test_sa(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
     let mut ea = optimal_sa();
+    (0..repeats)
+        .map(|_| {
+            let (score, _) = ea.solve(problem).unwrap();
+            score
+        })
+        .collect::<Vec<Fitness>>()
+}
+
+fn test_tssa(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
+    let mut ea = optimal_tssa();
+    (0..repeats)
+        .map(|_| {
+            let (score, _) = ea.solve(problem).unwrap();
+            score
+        })
+        .collect::<Vec<Fitness>>()
+}
+
+fn test_saea(problem: &dyn Problem, repeats: u16) -> Vec<Fitness> {
+    let mut ea = optimal_saea();
     (0..repeats)
         .map(|_| {
             let (score, _) = ea.solve(problem).unwrap();
@@ -267,6 +340,13 @@ pub fn run_comparisons() {
 
         let sa_scores = test_sa(&problem, 10);
         let sa_summary = Score::new(sa_scores);
+
+        let tssa_scores = test_tssa(&problem, 10);
+        let tssa_summary = Score::new(tssa_scores);
+
+        let saea_scores = test_saea(&problem, 10);
+        let saea_summary = Score::new(saea_scores);
+
         logger.log(ScoreSet {
             instance: String::from(instance),
             ea: ea_summary,
@@ -274,6 +354,8 @@ pub fn run_comparisons() {
             greedy: greedy_summary,
             tabu: tabu_summary,
             sa: sa_summary,
+            tssa: tssa_summary,
+            saea: saea_summary,
         })
     }
 

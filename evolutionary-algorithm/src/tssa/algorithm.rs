@@ -97,7 +97,7 @@ impl Solver for TSSA {
             match current_alg {
                 CurrentAlgorithm::SA => {
                     let new_best = self
-                        .solve_with_tabu(
+                        .solve_with_sa(
                             problem,
                             iteration * self.algorithm_switch_interval,
                             best_solution.clone(),
@@ -111,7 +111,7 @@ impl Solver for TSSA {
                 }
                 CurrentAlgorithm::TS => {
                     let new_best = self
-                        .solve_with_sa(
+                        .solve_with_tabu(
                             problem,
                             iteration * self.algorithm_switch_interval,
                             best_solution.clone(),
@@ -177,7 +177,7 @@ impl TSSA {
             ));
         }
 
-        self.logger.flush()?;
+        // self.logger.flush()?;
 
         Ok((best_fitness, best_solution))
     }
@@ -196,14 +196,14 @@ impl TSSA {
         };
 
         for i in initial_iteration..(self.algorithm_switch_interval + initial_iteration) {
-            self.log(problem, &solution, i);
             solution = self.solution_iteration(solution, problem)?;
             self.decrease_temperature();
+            self.log(problem, &solution, i);
         }
 
-        self.logger.flush()?;
+        // self.logger.flush()?;
 
-        Ok((solution.fitness, solution.individual))
+        Ok((solution.best_fitness, solution.individual))
     }
 
     //fn configuration_name(&self) -> String {
