@@ -1,0 +1,14 @@
+[package]
+name = "evolutionary-algorithm"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+anyhow = "1.0.89"
+pprof = {version = "0.10.0", features = ["flamegraph" ,"protobuf", "protobuf-codec", "cpp"]}
+protobuf = "3.7.1"
+rustc-demangle = "0.1"
+rand = "0.8.5"
+
+[profile.release]
+debug = 1
